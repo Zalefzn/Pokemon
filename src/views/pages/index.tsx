@@ -12,11 +12,11 @@ export default function HomePage() {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
   const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [pokemonDetails, setPokemonDetails] = useState<PokemonDetails | null>(
     null
   );
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const limit = 20;
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
@@ -28,7 +28,7 @@ export default function HomePage() {
       const useCase = new GetPokemonList(new PokemonRepositoryImpl());
       const data = await useCase.execute(offset, limit);
       setPokemons(data);
-      if (offset === 0) {
+      if (allPokemons.length === 0) {
         const allData = await useCase.execute(0, 1000);
         setAllPokemons(allData);
       }
@@ -76,7 +76,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchData();
-  }, [offset]);
+  }, [offset, limit]);
 
   const filteredPokemons = useMemo(() => {
     if (!searchTerm) return pokemons;
@@ -85,17 +85,17 @@ export default function HomePage() {
         pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .slice(0, limit);
-  }, [searchTerm, pokemons, allPokemons]);
+  }, [searchTerm, pokemons, allPokemons, limit]);
 
- const handleClosePopup = () => {
-  setShowPopup(false);
-  setSelectedPokemon(null);
-  
-  const cards = document.querySelectorAll('[data-aos]');
-  cards.forEach(card => {
-    card.setAttribute('data-aos', 'fade-up');
-  });
-};
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setSelectedPokemon(null);
+
+    const cards = document.querySelectorAll("[data-aos]");
+    cards.forEach((card) => {
+      card.setAttribute("data-aos", "fade-up");
+    });
+  };
 
   const handlePrevious = () => {
     if (offset > 0) setOffset((prev) => Math.max(prev - limit, 0));
@@ -109,14 +109,52 @@ export default function HomePage() {
         Pokémon Collection
       </h1>
 
-      <div className="mb-8 max-w-md mx-auto">
+      <div className="mb-8 max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <input
           type="text"
           placeholder="Search Pokémon..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full md:w-1/2 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Limit:</label>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setOffset(0);
+              }}
+              className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+            >
+              {[10, 20, 30, 40, 50].map((num) => (
+                <option key={num} value={num}>
+                  {num}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Offset:</label>
+            <select
+              value={offset}
+              onChange={(e) => setOffset(Number(e.target.value))}
+              className="px-2 py-1 border border-gray-300 rounded-lg text-sm"
+            >
+              {Array.from(
+                { length: Math.ceil(allPokemons.length / limit) },
+                (_, i) => i * limit
+              ).map((val) => (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {isLoading ? (
@@ -250,7 +288,6 @@ export default function HomePage() {
                         ))}
                       </div>
                     </div>
-
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-2 text-center">
                         Abilities
